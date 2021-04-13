@@ -19,7 +19,6 @@ TType? _type(Element element) {
   if (alias == null) return null;
   if (_hasStructAnnotation(element)) return _structType(alias);
   if (_hasRecordAnnotation(element)) return _recordType(alias);
-  if (_hasCompositeAnnotation(element)) return _compositeType(alias);
   if (_hasUnionAnnotation(element)) return _casesType(alias);
   return null;
 }
@@ -37,12 +36,6 @@ RecordType _recordType(TypeAliasElement element) => RecordType(
     );
 
 CasesType _casesType(TypeAliasElement element) => CasesType(
-      name: _recordTypeName(element),
-      typeParameters: _recordTypeParameters(element),
-      fields: _recordFields(element),
-    );
-
-CompositeType _compositeType(TypeAliasElement element) => CompositeType(
       name: _recordTypeName(element),
       typeParameters: _recordTypeParameters(element),
       fields: _recordFields(element),
@@ -175,9 +168,6 @@ bool _hasRecordAnnotation(Element element) =>
 
 bool _hasUnionAnnotation(Element element) =>
     const TypeChecker.fromRuntime(Cases).hasAnnotationOf(element);
-
-bool _hasCompositeAnnotation(Element element) =>
-    const TypeChecker.fromRuntime(Composite).hasAnnotationOf(element);
 
 bool _shouldExportOriginalUriFromGeneratedFile(LibraryReader library) =>
     library.element.imports

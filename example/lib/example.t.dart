@@ -5,8 +5,7 @@
 // **************************************************************************
 
 import 'package:typedefx/typedefx.dart';
-export 'package:example/example.dart'
-    hide Data, Error, Result, Either, PartA, PartB;
+export 'package:example/example.dart' hide Data, Error, Result, Either;
 
 class Data<T> {
   Data(this.id, this.datetime, this.value);
@@ -34,7 +33,8 @@ class Data<T> {
                 const DeepCollectionEquality()
                     .equals(other.datetime, datetime)) &&
             (identical(other.value, value) ||
-                const DeepCollectionEquality().equals(other.value, value)));
+                const DeepCollectionEquality()
+                    .equals(other.value, value)));
   }
 
   @override
@@ -69,13 +69,15 @@ class Error {
                 const DeepCollectionEquality()
                     .equals(other.datetime, datetime)) &&
             (identical(other.message, message) ||
-                const DeepCollectionEquality().equals(other.message, message)));
+                const DeepCollectionEquality()
+                    .equals(other.message, message)));
   }
 
   @override
-  String toString() => 'Error(id: $id, datetime: $datetime, message: $message)';
-  Error copyWith({int? id, String? datetime, String? message}) =>
-      Error(id ?? this.id, datetime ?? this.datetime, message ?? this.message);
+  String toString() =>
+      'Error(id: $id, datetime: $datetime, message: $message)';
+  Error copyWith({int? id, String? datetime, String? message}) => Error(
+      id ?? this.id, datetime ?? this.datetime, message ?? this.message);
 }
 
 class Result<T> {
@@ -109,12 +111,14 @@ class Result<T> {
             (identical(other.data, data) ||
                 const DeepCollectionEquality().equals(other.data, data)) &&
             (identical(other.error, error) ||
-                const DeepCollectionEquality().equals(other.error, error)));
+                const DeepCollectionEquality()
+                    .equals(other.error, error)));
   }
 
   @override
   String toString() => 'Result(data: $data, error: $error)';
-  $R map<$R>($R Function(Data<T>? value) data, $R Function(Error value) error) {
+  $R map<$R>(
+      $R Function(Data<T>? value) data, $R Function(Error value) error) {
     switch (_$case) {
       case _$ResultCase.Data:
         return data(this.data!);
@@ -172,7 +176,8 @@ class _$ResultCommon<T> {
   Result<T> copyWith({int? id, String? datetime}) {
     switch (_$cases._$case) {
       case _$ResultCase.Data:
-        return Result.data(_$cases.data!.copyWith(id: id, datetime: datetime));
+        return Result.data(
+            _$cases.data!.copyWith(id: id, datetime: datetime));
 
       case _$ResultCase.Error:
         return Result.error(
@@ -184,7 +189,8 @@ class _$ResultCommon<T> {
 class Either<T> {
   Either._(this._$case, this.result, this.none);
 
-  Either.result(Result<T> result) : this._(_$EitherCase.Result, result, null);
+  Either.result(Result<T> result)
+      : this._(_$EitherCase.Result, result, null);
 
   Either.none(int none) : this._(_$EitherCase.None, null, none);
 
@@ -206,14 +212,16 @@ class Either<T> {
     return identical(this, other) ||
         (other is Either<T> &&
             (identical(other.result, result) ||
-                const DeepCollectionEquality().equals(other.result, result)) &&
+                const DeepCollectionEquality()
+                    .equals(other.result, result)) &&
             (identical(other.none, none) ||
                 const DeepCollectionEquality().equals(other.none, none)));
   }
 
   @override
   String toString() => 'Either(result: $result, none: $none)';
-  $R map<$R>($R Function(Result<T> value) result, $R Function(int value) none) {
+  $R map<$R>(
+      $R Function(Result<T> value) result, $R Function(int value) none) {
     switch (_$case) {
       case _$EitherCase.Result:
         return result(this.result!);
