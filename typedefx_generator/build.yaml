@@ -1,0 +1,14 @@
+targets:
+  $default:
+    builders:
+      typedefx|typedefx_generator:
+        enabled: true
+
+builders:
+  typedefx:
+    import: "package:typedefx_generator/typedefx_generator.dart"
+    builder_factories: ["typedefx_generator"]
+    build_extensions: {".dart": [".t.dart"]}
+    auto_apply: dependents
+    build_to: source 
+    applies_builders: ["source_gen|combining_builder"]
