@@ -1,174 +1,226 @@
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/element.dart' as E;
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:typedefx/typedefx.dart';
-import 'package:typedefx_generator/src/config.dart';
-import 'package:typedefx_generator/src/models.dart';
+import 'package:typedefx_generator/src/utils.dart';
+import 'package:typedefx_generator/src/valid_elements.dart';
 
-TLibrary parse(LibraryReader library) => TLibrary(
-      uri: _generatedFileUri(library.element.source.uri),
-      originalUri: library.element.source.uri.toString(),
-      exportOriginalUri:
-          _shouldExportOriginalUriFromGeneratedFile(library),
-      types: library.allElements.map(_type).whereType<TType>(),
+const _TypedefxChecker = const TypeChecker.fromRuntime(Typedefx);
+const _RecordChecker = const TypeChecker.fromRuntime(Record);
+const _CasesChecker = const TypeChecker.fromRuntime(Cases);
+const _SpreadChecker = const TypeChecker.fromRuntime(Spread);
+const _OmitChecker = const TypeChecker.fromRuntime(Omit);
+
+final _cachedRecordElements = <int, RecordElement>{};
+final _cachedCasesElements = <int, CasesElement>{};
+
+TargetLibraryElement parse(
+  LibraryReader library,
+) =>
+    TargetLibraryElement(
+      imports:
+          library.element.imports.map((it) => it.uri).whereType<String>(),
+      uri: library.element.source.uri,
+      elements: library.allElements
+          .whereType<E.TypeAliasElement>()
+          .map(_tryParseTypeAlias)
+          .whereType<TypedefxElement>(),
     );
 
-TType? _type(Element element) {
-  final alias = _resolveAlias(element);
-  if (alias == null) return null;
-  if (_hasStructAnnotation(element)) return _structType(alias);
-  if (_hasRecordAnnotation(element)) return _recordType(alias);
-  if (_hasUnionAnnotation(element)) return _casesType(alias);
+TypedefxElement? _tryParseTypeAlias(E.TypeAliasElement element) {
+  if (_TypedefxChecker.hasAnnotationOf(element))
+    return _parseTypeAlias(element);
   return null;
 }
 
-StructType _structType(TypeAliasElement element) => StructType(
-      name: _recordTypeName(element),
-      typeParameters: _recordTypeParameters(element),
-      fields: _recordFields(element),
+TypedefxElement _parseTypeAlias(E.TypeAliasElement element) {
+  final bool isRecord = _RecordChecker.hasAnnotationOf(element);
+  final bool isCases = _CasesChecker.hasAnnotationOf(element);
+  if (isRecord && isCases) {
+    throw InvalidGenerationSourceError(
+      "Can't use @record and @cases, @composite at the same time",
+      element: element,
     );
-
-RecordType _recordType(TypeAliasElement element) => RecordType(
-      name: _recordTypeName(element),
-      typeParameters: _recordTypeParameters(element),
-      fields: _recordFields(element),
-    );
-
-CasesType _casesType(TypeAliasElement element) => CasesType(
-      name: _recordTypeName(element),
-      typeParameters: _recordTypeParameters(element),
-      fields: _recordFields(element),
-    );
-
-String _recordTypeName(TypeAliasElement element) => element.name;
-
-Iterable<TTypeParameter> _recordTypeParameters(TypeAliasElement element) =>
-    element.typeParameters.map(_recordTypeParameter);
-
-TTypeParameter _recordTypeParameter(TypeParameterElement parameter) =>
-    TTypeParameter(
-      name: parameter.name,
-      bound: _recordTypeParameterBound(parameter),
-    );
-
-TSymbol? _recordTypeParameterBound(TypeParameterElement parameter) {
-  final DartType? bound = parameter.bound;
-  return bound != null
-      ? TSymbol(
-          name: bound.toString(),
-          uri: _recordTypeParameterBoundUri(parameter),
-        )
-      : null;
-}
-
-String? _recordTypeParameterBoundUri(TypeParameterElement parameter) {
-  final boundElement = parameter.bound?.element;
-  return boundElement != null ? _resolvedUri(boundElement) : null;
-}
-
-Iterable<TTypeField> _recordFields(TypeAliasElement element) {
-  final fun = element.aliasedElement! as GenericFunctionTypeElement;
-  return fun.parameters.map(_recordField);
-}
-
-TTypeField _recordField(ParameterElement element) => TTypeField(
-      name: _recordFieldName(element),
-      type: _recordFieldType(element),
-      typeMeta: _typedefParameterTypeMeta(element),
-      isMandatory: _recordFieldIsMandatory(element),
-      isPositional: _recordFieldIsPositional(element),
-      isNullable: _typedefParameterNullability(element),
-    );
-
-TType? _typedefParameterTypeMeta(ParameterElement element) {
-  final typeElement = element.type.element;
-  if (typeElement != null) return _type(typeElement);
-  return null;
-}
-
-bool _typedefParameterNullability(ParameterElement element) =>
-    element.type.nullabilitySuffix == NullabilitySuffix.question;
-
-String _recordFieldName(ParameterElement element) => element.name;
-
-String? _recordFieldTypeUri(ParameterElement element) {
-  final Element? typeElement = element.type.element;
-  return typeElement != null ? _resolvedUri(typeElement) : null;
-}
-
-TSymbol _recordFieldType(ParameterElement element) => TSymbol(
-      name: _recordFieldTypeSource(element),
-      uri: _recordFieldTypeUri(element),
-    );
-
-String _recordFieldTypeSource(ParameterElement element) {
-  final type = element.type;
-  final typeElement = type.element;
-  final alias = typeElement != null ? _resolveAlias(typeElement) : null;
-  if (alias != null) {
-    final source = element.source!.contents.data;
-    final pattern = alias.name + r'\s*(<.+>)?\s*\??\s*$';
-    final match = RegExp(pattern)
-        .firstMatch(source.substring(0, element.nameOffset))
-        ?.group(0)
-        ?.trim();
-    if (match != null) return match;
   }
-  return type.toString();
+  return [
+    when(isRecord, then: () => _parseRecordElement(element)),
+    when(isCases, then: () => _parseCasesElement(element)),
+  ].eval();
 }
 
-bool _isFunctionTypeAlias(Element? element) =>
-    element != null && _resolveAlias(element) != null;
-
-TypeAliasElement? _resolveAlias(Element element) {
-  if (element is TypeAliasElement) return element;
-  final enclosingElement = element.enclosingElement;
-  if (enclosingElement is TypeAliasElement) return enclosingElement;
-  return null;
+RecordElement _parseRecordElement(E.TypeAliasElement element) {
+  return RecordElement(
+    name: _aliasName(element),
+    typeParameters: _aliasTypeParameters(element),
+    parameters: _parseRecordFields(element),
+  );
 }
 
-bool _recordFieldIsPositional(ParameterElement element) =>
-    element.isPositional;
+Iterable<RecordFieldElement> _parseRecordFields(
+        E.TypeAliasElement element) =>
+    _typeAliasParameters(element).map(_parseRecordField);
 
-bool _recordFieldIsMandatory(ParameterElement element) =>
-    element.isRequiredPositional ||
-    element.isRequiredNamed ||
-    (element.isNamed && !_isNullableType(element.type));
+RecordFieldElement _parseRecordField(E.ParameterElement parameter) {
+  final isMarkedAsOmit = _OmitChecker.hasAnnotationOf(parameter);
+  final isMarkedAsSpread = _SpreadChecker.hasAnnotationOf(parameter);
+  if (isMarkedAsOmit && isMarkedAsSpread) {
+    throw InvalidGenerationSourceError(
+      "@spread and @omit can't be used at the same time",
+      element: parameter,
+    );
+  }
+  return [
+    when(isMarkedAsSpread, then: () => _parseRecordSpreadField(parameter)),
+    when(isMarkedAsOmit, then: () => _parseRecordOmitField(parameter)),
+    when(true, then: () => _parseRecordConcreteField(parameter)),
+  ].eval();
+}
 
-bool _isNullableType(DartType type) =>
+RecordSpreadFieldElement _parseRecordSpreadField(
+    E.ParameterElement parameter) {
+  final record = _tryParseType(parameter.type);
+  if (record is! RecordElement) {
+    throw InvalidGenerationSourceError(
+      "@spread can only be used for an @record parameter",
+      element: parameter,
+    );
+  }
+  return RecordSpreadFieldElement(
+    name: parameter.name,
+    type: RecordSpreadFieldTypeElement(
+      element: record,
+      source: _parameterTypeSource(parameter),
+      uri: _uri(parameter.type),
+      isTypedefxElement: _isTypedefxElement(parameter.type),
+      isNullable: _typeNullability(parameter.type),
+    ),
+  );
+}
+
+RecordOmitFieldElement _parseRecordOmitField(
+    E.ParameterElement parameter) {
+  return RecordOmitFieldElement(name: parameter.name);
+}
+
+RecordConcreteFieldElement _parseRecordConcreteField(
+    E.ParameterElement parameter) {
+  return RecordConcreteFieldElement(
+    name: parameter.name,
+    type: RecordConcreteFieldTypeElement(
+      source: _parameterTypeSource(parameter),
+      isNullable: _typeNullability(parameter.type),
+      uri: _uri(parameter.type),
+      isTypedefxElement: _isTypedefxElement(parameter.type),
+    ),
+    isNamed: parameter.isNamed,
+    isMandatory: _isMandatoryParameter(parameter),
+  );
+}
+
+bool _typeNullability(DartType type) =>
     type.nullabilitySuffix == NullabilitySuffix.question;
 
-String? _resolvedUri(Element element) {
-  if (element is TypeParameterElement) return null;
-  final uri = element.source?.uri;
-  if (uri == null) return null;
-  if (_isCoreLibrary(uri)) return null;
-  return _isRecordElement(element)
-      ? _generatedFileUri(uri)
-      : uri.toString();
+bool _isMandatoryParameter(E.ParameterElement parameter) =>
+    parameter.isRequiredPositional ||
+    parameter.isRequiredNamed ||
+    (parameter.isNamed && _typeNullability(parameter.type));
+
+CasesElement _parseCasesElement(E.TypeAliasElement typeAlias) =>
+    CasesElement(
+      name: typeAlias.name,
+      typeParameters: _aliasTypeParameters(typeAlias),
+      parameters: _typeAliasParameters(typeAlias).map(_parseCase),
+    );
+
+CaseElement _parseCase(E.ParameterElement parameter) {
+  return CaseElement(
+    name: parameter.name,
+    type: _parseCaseType(parameter),
+  );
 }
 
-bool _isCoreLibrary(Uri uri) => uri.toString().startsWith('dart:core');
-
-bool _isRecordElement(Element element) {
-  final alias = _resolveAlias(element);
-  if (alias == null) return false;
-  return _hasRecordAnnotation(element);
+CaseTypeElement _parseCaseType(E.ParameterElement parameter) {
+  final source = _parameterTypeSource(parameter);
+  final uri = _uri(parameter.type);
+  final isTypedefxElement = _isTypedefxElement(parameter.type);
+  final typedefxElement = _tryParseType(parameter.type);
+  final isNullable = _typeNullability(parameter.type);
+  if (typedefxElement is RecordElement)
+    return RecordCaseTypeElement(
+      element: typedefxElement,
+      source: source,
+      isTypedefxElement: isTypedefxElement,
+      uri: uri,
+      isNullable: isNullable,
+    );
+  else if (typedefxElement is CasesElement)
+    return CasesCaseTypeElement(
+      element: typedefxElement,
+      source: source,
+      isTypedefxElement: isTypedefxElement,
+      uri: uri,
+      isNullable: isNullable,
+    );
+  else
+    return CaseTypeElement(
+      source: source,
+      isTypedefxElement: isTypedefxElement,
+      uri: uri,
+      isNullable: isNullable,
+    );
 }
 
-String _generatedFileUri(Uri uri) =>
-    uri.toString().replaceFirst('.dart', generated_file_extension);
+E.TypeAliasElement? _toTypeAliasElementOrNull(DartType type) {
+  final element = type.element;
+  if (element == null) return null;
+  if (element is E.TypeAliasElement) return element;
+  final enclosed = element.enclosingElement;
+  if (enclosed is E.TypeAliasElement) return enclosed;
+  return null;
+}
 
-bool _hasStructAnnotation(Element element) =>
-    const TypeChecker.fromRuntime(Struct).hasAnnotationOf(element);
+TypedefxElement? _tryParseType(DartType type) =>
+    _toTypeAliasElementOrNull(type)?.let(_tryParseTypeAlias);
 
-bool _hasRecordAnnotation(Element element) =>
-    const TypeChecker.fromRuntime(Record).hasAnnotationOf(element);
+String _aliasName(E.TypeAliasElement element) => element.name;
 
-bool _hasUnionAnnotation(Element element) =>
-    const TypeChecker.fromRuntime(Cases).hasAnnotationOf(element);
+Iterable<TypeParameterElement> _aliasTypeParameters(
+  E.TypeAliasElement element,
+) =>
+    element.typeParameters.map(
+      (param) => TypeParameterElement(
+        name: param.name,
+        bound: param.bound?.let(
+          (bound) => TypeParameterBoundElement(
+            name: bound.toString(),
+            isTypedefxElement: _isTypedefxElement(bound),
+            uri: _uri(bound),
+            isNullable: _typeNullability(bound),
+          ),
+        ),
+      ),
+    );
 
-bool _shouldExportOriginalUriFromGeneratedFile(LibraryReader library) =>
-    library.element.imports
-        .any((it) => it.uri == 'package:typedefx/typedefx_export.dart');
+Uri? _uri(DartType type) => type.element?.source?.uri;
+
+bool _isTypedefxElement(DartType type) =>
+    _toTypeAliasElementOrNull(type) != null;
+
+String _parameterTypeSource(E.ParameterElement parameter) {
+  final source = _toTypeAliasElementOrNull(parameter.type)?.let(
+    (alias) {
+      final src = parameter.source!.contents.data;
+      final pattern = alias.name + r'\s*(<.+>)?\s*\??\s*$';
+      return RegExp(pattern)
+          .firstMatch(src.substring(0, parameter.nameOffset))
+          ?.group(0)
+          ?.trim();
+    },
+  );
+  return source ?? parameter.type.toString();
+}
+
+Iterable<E.ParameterElement> _typeAliasParameters(
+        E.TypeAliasElement alias) =>
+    (alias.aliasedElement as E.GenericFunctionTypeElement).parameters;

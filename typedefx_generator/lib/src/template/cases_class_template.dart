@@ -10,7 +10,7 @@ import 'package:typedefx_generator/src/template/to_string_method_template.dart'
 Iterable<Spec> inflate(CasesType type) => [
       _class(type),
       _enum(type),
-      if (_shuoldGenerateCommonClass(type)) _commonClass(type),
+      // if (_shuoldGenerateCommonClass(type)) _commonClass(type),
     ];
 
 Enum _enum(CasesType type) {
@@ -21,15 +21,14 @@ Enum _enum(CasesType type) {
 }
 
 Iterable<EnumValue> _enumValues(CasesType type) =>
-    type.fields.map(_enumValue);
+    type.cases.map(_enumValue);
 
-EnumValue _enumValue(TTypeField parameter) {
+EnumValue _enumValue(Case parameter) {
   final value = EnumValueBuilder()..name = _enumValueName(parameter);
   return value.build();
 }
 
-String _enumValueName(TTypeField parameter) =>
-    _upperCamelCase(parameter.name);
+String _enumValueName(Case parameter) => _upperCamelCase(parameter.name);
 
 String _upperCamelCase(String name) {
   if (name.length < 2) return name.toUpperCase();
@@ -46,9 +45,9 @@ Class _class(CasesType type) {
     ..fields.add(_caseField(type))
     ..fields.addAll(_fields(type))
     ..methods.addAll(_methods(type));
-  if (_shuoldGenerateCommonClass(type)) {
-    klass.fields.add(_commonField(type));
-  }
+  // if (_shuoldGenerateCommonClass(type)) {
+  //   klass.cases.add(_commonField(type));
+  // }
   return klass.build();
 }
 
@@ -62,16 +61,16 @@ Field _caseField(CasesType type) {
   return field.build();
 }
 
-Field _commonField(CasesType type) {
-  final field = FieldBuilder()
-    ..name = 'common'
-    ..type = refer(_commonClassName(type))
-    ..modifier = FieldModifier.final$
-    ..assignment = Code('${_commonClassName(type)}()');
-  return field.build();
-}
+// Field _commonField(CasesType type) {
+//   final field = FieldBuilder()
+//     ..name = 'common'
+//     ..type = refer(_commonClassName(type))
+//     ..modifier = FieldModifier.final$
+//     ..assignment = Code('${_commonClassName(type)}()');
+//   return field.build();
+// }
 
-Iterable<Reference> _typeParameters(TType type) =>
+Iterable<Reference> _typeParameters(CasesType type) =>
     type.typeParameters.map((it) {
       final name = it.name;
       final bound = it.bound?.name;
@@ -88,7 +87,7 @@ Iterable<Reference> _typeParameters(TType type) =>
 
 Iterable<Constructor> _constructors(CasesType type) => [
       _internalConstructor(type),
-      ...type.fields.map((it) => _constructor(type, it)),
+      ...type.cases.map((it) => _constructor(type, it)),
     ];
 
 Constructor _internalConstructor(CasesType type) {
@@ -97,70 +96,70 @@ Constructor _internalConstructor(CasesType type) {
     ..requiredParameters.addAll(
       [
         r'_$case',
-        ...type.fields.map((it) => it.name),
+        ...type.cases.map((it) => it.name),
       ].map((name) => Parameter((p) => p..name = 'this.$name')),
     );
-  if (_shuoldGenerateCommonClass(type)) {
-    ctor.body = Code(r'common._$cases = this;');
-  }
+  // if (_shuoldGenerateCommonClass(type)) {
+  //   ctor.body = Code(r'common._$cases = this;');
+  // }
   return ctor.build();
 }
 
-Constructor _constructor(CasesType type, TTypeField field) {
+Constructor _constructor(CasesType type, Case caze) {
   final ctor = ConstructorBuilder()
-    ..name = field.name
-    ..requiredParameters.add(_constructorParameter(field))
-    ..initializers.add(_constructorInitializer(type, field));
+    ..name = caze.name
+    ..requiredParameters.add(_constructorParameter(caze))
+    ..initializers.add(_constructorInitializer(type, caze));
   return ctor.build();
 }
 
-Code _constructorInitializer(CasesType type, TTypeField field) {
+Code _constructorInitializer(CasesType type, Case field) {
   final args = [
     '${_enumName(type)}.${_enumValueName(field)}',
-    ...type.fields.map((it) => it.name == field.name ? it.name : 'null'),
+    ...type.cases.map((it) => it.name == field.name ? it.name : 'null'),
   ].join(', ');
   return Code('this._($args)');
 }
 
-Parameter _constructorParameter(TTypeField field) {
+Parameter _constructorParameter(Case field) {
   final parameter = ParameterBuilder()
     ..name = field.name
     ..type = refer(field.type.name);
   return parameter.build();
 }
 
-Field _field(TTypeField field) {
+Field _field(Case caze) {
   final field_ = FieldBuilder()
-    ..name = field.name
-    ..type = refer(_fieldType(field))
+    ..name = caze.name
+    ..type = refer(_fieldType(caze))
     ..modifier = FieldModifier.final$;
   return field_.build();
 }
 
-String _fieldType(TTypeField field) {
-  return field.isNullable ? field.type.name : '${field.type.name}?';
+String _fieldType(Case caze) {
+  return caze.type.isNullable ? caze.type.name : '${caze.type.name}?';
 }
 
-Iterable<Field> _fields(TType type) => type.fields.map(_field);
+Iterable<Field> _fields(CasesType type) => type.cases.map(_field);
 
 Iterable<Method> _methods(CasesType type) => [
       hashCodeMethod.inflate(
         fieldNames: [
-          ...type.fields.map((it) => it.name),
+          ...type.cases.map((it) => it.name),
           '_\$case',
         ],
       ),
       equalsMethod.inflate(
         className: _parameterizedCasesClassName(type),
-        fieldNames: type.fields.map((it) => it.name),
+        fieldNames: type.cases.map((it) => it.name),
       ),
       toStringMethod.inflate(
         className: type.name,
-        fieldNames: type.fields.map((it) => it.name),
+        fieldNames: type.cases.map((it) => it.name),
       ),
       _mapMethod(type),
       _matchMethod(type),
-      ...type.fields.map((field) => _hasMethod(type, field)),
+      ...type.cases.map((field) => _hasMethod(type, field)),
     ];
 
 /*
@@ -182,7 +181,7 @@ Method _mapMethod(CasesType type) {
     ..name = 'map'
     ..types.addAll([refer(r'$R')])
     ..returns = refer(r'$R')
-    ..requiredParameters.addAll(type.fields.map(
+    ..requiredParameters.addAll(type.cases.map(
       (field) => Parameter(
         (p) => p
           ..name = field.name
@@ -191,7 +190,7 @@ Method _mapMethod(CasesType type) {
     ))
     ..body = Code([
       'switch (_\$case) {',
-      ...type.fields.map((field) => '''
+      ...type.cases.map((field) => '''
       case ${_enumName(type)}.${_enumValueName(field)}:
         return ${field.name}(this.${field.name}!);
       '''),
@@ -223,7 +222,7 @@ Method _matchMethod(CasesType type) {
   final method = MethodBuilder()
     ..name = 'match<\$R>'
     ..returns = refer(r'$R?')
-    ..optionalParameters.addAll(type.fields.map(
+    ..optionalParameters.addAll(type.cases.map(
       (field) => Parameter(
         (p) => p
           ..name = field.name
@@ -242,7 +241,7 @@ Method _matchMethod(CasesType type) {
     )
     ..body = Code([
       'switch (_\$case) {',
-      ...type.fields.map((field) => '''
+      ...type.cases.map((field) => '''
       case ${_enumName(type)}.${_enumValueName(field)}:
         if (${field.name} != null) return ${field.name}(this.${field.name}!);
         break;
@@ -257,7 +256,7 @@ Method _matchMethod(CasesType type) {
   bool get hasError => _case == ResultCase.Error;
 */
 
-Method _hasMethod(CasesType type, TTypeField field) {
+Method _hasMethod(CasesType type, Case field) {
   final method = MethodBuilder();
   method
     ..name = 'has${_upperCamelCase(field.name)}'
@@ -276,13 +275,14 @@ String _parameterizedCasesClassName(CasesType type) {
       : '${type.name}<${params.join(', ')}>';
 }
 
+/*
 String _commonClassName(CasesType type) => '_\$${type.name}Common';
 
 Class _commonClass(CasesType type) {
   final klass = ClassBuilder()
     ..name = _commonClassName(type)
     ..types.addAll(_typeParameters(type))
-    ..fields.add(_casesField(type))
+    ..cases.add(_casesField(type))
     ..methods.addAll(_commonGetters(type));
   if (_shouldGenerateCopyWithMethod(type)) {
     klass.methods.add(_copyWithMethod(type));
@@ -300,34 +300,34 @@ Field _casesField(CasesType type) {
 Iterable<Method> _commonGetters(CasesType type) =>
     _commonFields(type).map((field) => _commonGetter(type, field));
 
-Iterable<TTypeField> _commonFields(CasesType type) {
-  return _intersection(type.fields.map(_apparentFieldsOfFieldType));
+Iterable<Case> _commonFields(CasesType type) {
+  return _intersection(type.cases.map(_apparentFieldsOfFieldType));
 }
 
-Iterable<TTypeField> _apparentFieldsOfFieldType(TTypeField field) {
+Iterable<Case> _apparentFieldsOfFieldType(Case field) {
   final typeMeta = field.typeMeta;
-  if (typeMeta == null) return <TTypeField>[];
+  if (typeMeta == null) return <Case>[];
   return _apparentFieldsOfType(typeMeta);
 }
 
-Iterable<TTypeField> _apparentFieldsOfType(TType type) {
-  if (type is RecordType || type is StructType) return type.fields;
-  if (type is CompositeType) return type.fields;
+Iterable<Case> _apparentFieldsOfType(TType type) {
+  if (type is RecordType || type is StructType) return type.cases;
+  if (type is CompositeType) return type.cases;
   if (type is CasesType) return _commonFields(type);
   throw Exception('should not be reached');
 }
 
-Iterable<TTypeField> _intersection(Iterable<Iterable<TTypeField>> groups) {
+Iterable<Case> _intersection(Iterable<Iterable<Case>> groups) {
   if (groups.isEmpty) return [];
   if (groups.length == 1) return groups.first;
-  return groups.skip(1).fold<Iterable<TTypeField>>(
+  return groups.skip(1).fold<Iterable<Case>>(
         groups.first,
         (prev, cur) => _intersectionOf(prev, cur),
       );
 }
 
-Iterable<TTypeField> _intersectionOf(
-        Iterable<TTypeField> left, Iterable<TTypeField> right) =>
+Iterable<Case> _intersectionOf(
+        Iterable<Case> left, Iterable<Case> right) =>
     left.toList()
       ..removeWhere(
         (field) => !right.any(
@@ -335,17 +335,17 @@ Iterable<TTypeField> _intersectionOf(
         ),
       );
 
-bool _areFieldsSame(TTypeField left, TTypeField right) =>
+bool _areFieldsSame(Case left, Case right) =>
     left.name == right.name && left.type.name == right.type.name;
 
-Method _commonGetter(CasesType type, TTypeField field) {
+Method _commonGetter(CasesType type, Case field) {
   final method = MethodBuilder()
     ..name = field.name
     ..returns = refer(field.type.name)
     ..type = MethodType.getter
     ..body = Code([
       r'switch (_$cases._$case) {',
-      ...type.fields.map((case_) => '''
+      ...type.cases.map((case_) => '''
       case ${_enumName(type)}.${_enumValueName(case_)}:
         return _\$cases.${case_.name}!.${field.name};
       '''),
@@ -388,7 +388,7 @@ Method _copyWithMethod(CasesType type) {
           fields.map((it) => '${it.name}: ${it.name}').join(', ');
       return Code([
         r'switch (_$cases._$case) {',
-        ...type.fields.map((case_) => '''
+        ...type.cases.map((case_) => '''
         case ${_enumName(type)}.${_enumValueName(case_)}:
           return ${_casesClassName(type)}.${case_.name}(_\$cases.${case_.name}!.copyWith($copyWithArgs));
           '''),
@@ -398,8 +398,10 @@ Method _copyWithMethod(CasesType type) {
   return method.build();
 }
 
-String _nullableType(TTypeField field) =>
-    field.isNullable ? field.type.name : '${field.type.name}?';
+String _nullableType(Case caze) =>
+    caze.type ? caze.type.name : '${caze.type.name}?';
 
-bool _shouldGenerateCopyWithMethod(CasesType type) => type.fields.every(
-    (field) => field.typeMeta != null && field.typeMeta is! CasesType);
+bool _shouldGenerateCopyWithMethod(CasesType type) =>
+    type.commonFields.isNotEmpty &&
+    type.cases.every((caze) => caze.type.source is RecordType);
+*/

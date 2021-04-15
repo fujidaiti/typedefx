@@ -5,7 +5,8 @@
 // **************************************************************************
 
 import 'package:typedefx/typedefx.dart';
-export 'package:example/example.dart' hide Data, Error, Result, Either;
+export 'package:example/example.dart'
+    hide Data, Error, Task, TaskSummary, Result, Either;
 
 class Data<T> {
   Data(this.id, this.datetime, this.value);
@@ -33,8 +34,7 @@ class Data<T> {
                 const DeepCollectionEquality()
                     .equals(other.datetime, datetime)) &&
             (identical(other.value, value) ||
-                const DeepCollectionEquality()
-                    .equals(other.value, value)));
+                const DeepCollectionEquality().equals(other.value, value)));
   }
 
   @override
@@ -69,21 +69,82 @@ class Error {
                 const DeepCollectionEquality()
                     .equals(other.datetime, datetime)) &&
             (identical(other.message, message) ||
-                const DeepCollectionEquality()
-                    .equals(other.message, message)));
+                const DeepCollectionEquality().equals(other.message, message)));
   }
 
   @override
-  String toString() =>
-      'Error(id: $id, datetime: $datetime, message: $message)';
-  Error copyWith({int? id, String? datetime, String? message}) => Error(
-      id ?? this.id, datetime ?? this.datetime, message ?? this.message);
+  String toString() => 'Error(id: $id, datetime: $datetime, message: $message)';
+  Error copyWith({int? id, String? datetime, String? message}) =>
+      Error(id ?? this.id, datetime ?? this.datetime, message ?? this.message);
+}
+
+class Task {
+  Task(this.id, this.datetime, this.owner);
+
+  final String id;
+
+  final String datetime;
+
+  final String owner;
+
+  @override
+  int get hashCode =>
+      runtimeType.hashCode ^
+      const DeepCollectionEquality().hash(id) ^
+      const DeepCollectionEquality().hash(datetime) ^
+      const DeepCollectionEquality().hash(owner) ^
+      super.hashCode;
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (other is Task &&
+            (identical(other.id, id) ||
+                const DeepCollectionEquality().equals(other.id, id)) &&
+            (identical(other.datetime, datetime) ||
+                const DeepCollectionEquality()
+                    .equals(other.datetime, datetime)) &&
+            (identical(other.owner, owner) ||
+                const DeepCollectionEquality().equals(other.owner, owner)));
+  }
+
+  @override
+  String toString() => 'Task(id: $id, datetime: $datetime, owner: $owner)';
+  Task copyWith({String? id, String? datetime, String? owner}) =>
+      Task(id ?? this.id, datetime ?? this.datetime, owner ?? this.owner);
+}
+
+class TaskSummary {
+  TaskSummary(this.id, this.datetime);
+
+  final String id;
+
+  final String datetime;
+
+  @override
+  int get hashCode =>
+      runtimeType.hashCode ^
+      const DeepCollectionEquality().hash(id) ^
+      const DeepCollectionEquality().hash(datetime) ^
+      super.hashCode;
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (other is TaskSummary &&
+            (identical(other.id, id) ||
+                const DeepCollectionEquality().equals(other.id, id)) &&
+            (identical(other.datetime, datetime) ||
+                const DeepCollectionEquality()
+                    .equals(other.datetime, datetime)));
+  }
+
+  @override
+  String toString() => 'TaskSummary(id: $id, datetime: $datetime)';
+  TaskSummary copyWith({String? id, String? datetime}) =>
+      TaskSummary(id ?? this.id, datetime ?? this.datetime);
 }
 
 class Result<T> {
-  Result._(this._$case, this.data, this.error) {
-    common._$cases = this;
-  }
+  Result._(this._$case, this.data, this.error);
 
   Result.data(Data<T>? data) : this._(_$ResultCase.Data, data, null);
 
@@ -94,8 +155,6 @@ class Result<T> {
   final Data<T>? data;
 
   final Error? error;
-
-  final _$ResultCommon common = _$ResultCommon();
 
   @override
   int get hashCode =>
@@ -111,14 +170,12 @@ class Result<T> {
             (identical(other.data, data) ||
                 const DeepCollectionEquality().equals(other.data, data)) &&
             (identical(other.error, error) ||
-                const DeepCollectionEquality()
-                    .equals(other.error, error)));
+                const DeepCollectionEquality().equals(other.error, error)));
   }
 
   @override
   String toString() => 'Result(data: $data, error: $error)';
-  $R map<$R>(
-      $R Function(Data<T>? value) data, $R Function(Error value) error) {
+  $R map<$R>($R Function(Data<T>? value) data, $R Function(Error value) error) {
     switch (_$case) {
       case _$ResultCase.Data:
         return data(this.data!);
@@ -150,47 +207,10 @@ class Result<T> {
 
 enum _$ResultCase { Data, Error }
 
-class _$ResultCommon<T> {
-  late final Result<T> _$cases;
-
-  int get id {
-    switch (_$cases._$case) {
-      case _$ResultCase.Data:
-        return _$cases.data!.id;
-
-      case _$ResultCase.Error:
-        return _$cases.error!.id;
-    }
-  }
-
-  String get datetime {
-    switch (_$cases._$case) {
-      case _$ResultCase.Data:
-        return _$cases.data!.datetime;
-
-      case _$ResultCase.Error:
-        return _$cases.error!.datetime;
-    }
-  }
-
-  Result<T> copyWith({int? id, String? datetime}) {
-    switch (_$cases._$case) {
-      case _$ResultCase.Data:
-        return Result.data(
-            _$cases.data!.copyWith(id: id, datetime: datetime));
-
-      case _$ResultCase.Error:
-        return Result.error(
-            _$cases.error!.copyWith(id: id, datetime: datetime));
-    }
-  }
-}
-
 class Either<T> {
   Either._(this._$case, this.result, this.none);
 
-  Either.result(Result<T> result)
-      : this._(_$EitherCase.Result, result, null);
+  Either.result(Result<T> result) : this._(_$EitherCase.Result, result, null);
 
   Either.none(int none) : this._(_$EitherCase.None, null, none);
 
@@ -212,16 +232,14 @@ class Either<T> {
     return identical(this, other) ||
         (other is Either<T> &&
             (identical(other.result, result) ||
-                const DeepCollectionEquality()
-                    .equals(other.result, result)) &&
+                const DeepCollectionEquality().equals(other.result, result)) &&
             (identical(other.none, none) ||
                 const DeepCollectionEquality().equals(other.none, none)));
   }
 
   @override
   String toString() => 'Either(result: $result, none: $none)';
-  $R map<$R>(
-      $R Function(Result<T> value) result, $R Function(int value) none) {
+  $R map<$R>($R Function(Result<T> value) result, $R Function(int value) none) {
     switch (_$case) {
       case _$EitherCase.Result:
         return result(this.result!);
@@ -252,33 +270,3 @@ class Either<T> {
 }
 
 enum _$EitherCase { Result, None }
-
-class PartA {
-  PartA();
-
-  @override
-  int get hashCode => runtimeType.hashCode ^ super.hashCode;
-  @override
-  bool operator ==(dynamic other) {
-    return identical(this, other) || (other is PartA);
-  }
-
-  @override
-  String toString() => 'PartA()';
-  PartA copyWith() => PartA();
-}
-
-class PartB {
-  PartB();
-
-  @override
-  int get hashCode => runtimeType.hashCode ^ super.hashCode;
-  @override
-  bool operator ==(dynamic other) {
-    return identical(this, other) || (other is PartB);
-  }
-
-  @override
-  String toString() => 'PartB()';
-  PartB copyWith() => PartB();
-}

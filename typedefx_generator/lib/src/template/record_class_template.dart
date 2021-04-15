@@ -19,29 +19,25 @@ Class inflate(RecordType type) {
   return klass.build();
 }
 
-Iterable<Reference> _typeParameters(TType type) =>
+Iterable<Reference> _typeParameters(RecordType type) =>
     type.typeParameters.map((it) {
       final name = it.name;
       final bound = it.bound?.name;
       return bound != null ? '$name extends $bound' : name;
     }).map((it) => refer(it));
 
-Constructor _constructor(TType type) {
+Constructor _constructor(RecordType type) {
   final ctor = ConstructorBuilder()
     ..requiredParameters.addAll(
-      type.fields
-          .where((it) => it.isPositional)
-          .map(_constructorParameter),
+      type.fields.where((it) => !it.isNamed).map(_constructorParameter),
     )
     ..optionalParameters.addAll(
-      type.fields
-          .where((it) => !it.isPositional)
-          .map(_constructorParameter),
+      type.fields.where((it) => it.isNamed).map(_constructorParameter),
     );
   return ctor.build();
 }
 
-Parameter _constructorParameter(TTypeField field) {
+Parameter _constructorParameter(TypeField field) {
   final parameter = ParameterBuilder()
     ..name = field.name
     ..toThis = true
@@ -50,12 +46,12 @@ Parameter _constructorParameter(TTypeField field) {
   return parameter.build();
 }
 
-bool _shouldBeNamedParameter(TTypeField field) => !field.isPositional;
+bool _shouldBeNamedParameter(TypeField field) => field.isNamed;
 
-bool _shouldBeMarkedAsRequired(TTypeField field) =>
+bool _shouldBeMarkedAsRequired(TypeField field) =>
     _shouldBeNamedParameter(field) && field.isMandatory;
 
-Field _field(TTypeField field) {
+Field _field(TypeField field) {
   final field_ = FieldBuilder()
     ..name = field.name
     ..type = refer(field.type.name)
@@ -63,9 +59,9 @@ Field _field(TTypeField field) {
   return field_.build();
 }
 
-Iterable<Field> _fields(TType type) => type.fields.map(_field);
+Iterable<Field> _fields(RecordType type) => type.fields.map(_field);
 
-Iterable<Method> _methods(TType type) => [
+Iterable<Method> _methods(RecordType type) => [
       hashCodeMethod.inflate(
         fieldNames: type.fields.map((it) => it.name),
       ),
@@ -80,7 +76,7 @@ Iterable<Method> _methods(TType type) => [
       copyWithMethod.inflate(type),
     ];
 
-String _parameterizedSelfType(TType type) {
+String _parameterizedSelfType(RecordType type) {
   final params = type.typeParameters.map((it) => it.name);
   return params.isEmpty
       ? '${type.name}'

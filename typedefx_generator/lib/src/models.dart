@@ -1,68 +1,151 @@
-class TLibrary {
-  final Iterable<TType> types;
+class GeneratedLibrary {
+  final Iterable<RecordType> records;
+  final Iterable<CasesType> cases;
+  final Iterable<CompositeType> composites;
   final String uri;
   final String originalUri;
   final bool exportOriginalUri;
 
-  TLibrary({
-    required this.types,
+  GeneratedLibrary({
+    required this.records,
+    required this.cases,
+    required this.composites,
     required this.uri,
     required this.originalUri,
     required this.exportOriginalUri,
   });
 }
 
-class TType {
+abstract class TypedefxType {
   final String name;
-  final Iterable<TTypeParameter> typeParameters;
-  final Iterable<TTypeField> fields;
+  final Iterable<TypeParameter> typeParameters;
 
-  TType({
+  TypedefxType({
     required this.name,
     required this.typeParameters,
-    required this.fields,
   });
 }
 
-class StructType = TType with Type;
-class RecordType = TType with Type;
-class CompositeType = TType with Type;
-class CasesType = TType with Type;
+class RecordType extends TypedefxType {
+  final Iterable<TypeField> fields;
 
-class TTypeField {
+  RecordType({
+    required String name,
+    required Iterable<TypeParameter> typeParameters,
+    required this.fields,
+  }) : super(name: name, typeParameters: typeParameters);
+}
+
+class TypeField {
   final String name;
-  final TSymbol type;
-  final TType? typeMeta;
+  final ConcreteType type;
   final bool isMandatory;
-  final bool isPositional;
-  final bool isNullable;
+  final bool isNamed;
 
-  TTypeField({
+  TypeField({
     required this.name,
     required this.type,
-    required this.typeMeta,
     required this.isMandatory,
-    required this.isPositional,
+    required this.isNamed,
+  });
+}
+
+class TypeParameter {
+  final String name;
+  final ConcreteType? bound;
+
+  TypeParameter({
+    required this.name,
+    required this.bound,
+  });
+}
+
+class CasesType extends TypedefxType {
+  final Iterable<Case> cases;
+  final Iterable<TypeField> commonFields;
+
+  CasesType({
+    required String name,
+    required Iterable<TypeParameter> typeParameters,
+    required this.cases,
+    required this.commonFields,
+  }) : super(name: name, typeParameters: typeParameters);
+}
+
+class Case {
+  final String name;
+  final CaseType type;
+
+  Case({
+    required this.name,
+    required this.type,
+  });
+}
+
+class CaseType extends ConcreteType {
+  final TypedefxType? source;
+
+  CaseType({
+    required String name,
+    required String? uri,
+    required bool isNullable,
+    required this.source,
+  }) : super(
+          name: name,
+          uri: uri,
+          isNullable: isNullable,
+        );
+}
+
+class CompositeType extends TypedefxType {
+  final Iterable<Component> components;
+
+  CompositeType({
+    required String name,
+    required Iterable<TypeParameter> typeParameters,
+    required this.components,
+  }) : super(name: name, typeParameters: typeParameters);
+}
+
+class Component<T extends TypedefxType> {
+  final String name;
+  final ComponentType<T> type;
+
+  Component({
+    required this.name,
+    required this.type,
+  });
+}
+
+class NestedRecord = Component<RecordType> with Type;
+class NestedComposite = Component<CompositeType> with Type;
+
+abstract class ComponentType<T extends TypedefxType> extends ConcreteType {
+  final T source;
+
+  ComponentType({
+    required String name,
+    required String? uri,
+    required bool isNullable,
+    required this.source,
+  }) : super(
+          name: name,
+          uri: uri,
+          isNullable: isNullable,
+        );
+}
+
+class ConcreteType {
+  final String name;
+  final String? uri;
+  final bool isNullable;
+
+  ConcreteType({
+    required this.name,
+    required this.uri,
     required this.isNullable,
   });
 }
 
-class TTypeParameter {
-  final String name;
-  final TSymbol? bound;
-
-  TTypeParameter({
-    required this.name,
-    this.bound,
-  });
-}
-
-class TSymbol {
-  final String name;
-  final String? uri;
-
-  TSymbol({
-    required this.name,
-    required this.uri,
-  });
-}
+// composite.partial.data
+// composite.part.data
