@@ -73,7 +73,7 @@ RecordFieldElement _parseRecordField(E.ParameterElement parameter) {
   return [
     when(isMarkedAsSpread, then: () => _parseRecordSpreadField(parameter)),
     when(isMarkedAsOmit, then: () => _parseRecordOmitField(parameter)),
-    when(true, then: () => _parseRecordConcreteField(parameter)),
+    when(true, then: () => _parseRecorField(parameter)),
   ].eval();
 }
 
@@ -88,6 +88,8 @@ RecordSpreadFieldElement _parseRecordSpreadField(
   }
   return RecordSpreadFieldElement(
     name: parameter.name,
+    isMandatory: _isMandatoryParameter(parameter),
+    isNamed: parameter.isNamed,
     type: RecordSpreadFieldTypeElement(
       element: record,
       source: _parameterTypeSource(parameter),
@@ -100,14 +102,17 @@ RecordSpreadFieldElement _parseRecordSpreadField(
 
 RecordOmitFieldElement _parseRecordOmitField(
     E.ParameterElement parameter) {
-  return RecordOmitFieldElement(name: parameter.name);
+  return RecordOmitFieldElement(
+    name: parameter.name,
+    isMandatory: _isMandatoryParameter(parameter),
+    isNamed: parameter.isNamed,
+  );
 }
 
-RecordConcreteFieldElement _parseRecordConcreteField(
-    E.ParameterElement parameter) {
-  return RecordConcreteFieldElement(
+RecordFieldElement _parseRecorField(E.ParameterElement parameter) {
+  return RecordFieldElement(
     name: parameter.name,
-    type: RecordConcreteFieldTypeElement(
+    type: RecordFieldTypeElement(
       source: _parameterTypeSource(parameter),
       isNullable: _typeNullability(parameter.type),
       uri: _uri(parameter.type),

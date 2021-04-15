@@ -25,12 +25,14 @@ Iterable<TypeField> _recordFields(Iterable<RecordFieldElement> elements) {
   final omittedFields = <String>[];
   elements.forEach((element) {
     if (element is RecordSpreadFieldElement) {
-      _record(element.type.element)
-          .fields
-          .forEach((field) => fields[field.name] = field);
+      _spreadRrecord(
+        _record(element.type.element),
+        element.isNamed,
+        element.isMandatory,
+      ).forEach((field) => fields[field.name] = field);
     } else if (element is RecordOmitFieldElement) {
       omittedFields.add(element.name);
-    } else if (element is RecordConcreteFieldElement) {
+    } else {
       final field = _recordField(element);
       fields[field.name] = field;
     }
@@ -39,8 +41,22 @@ Iterable<TypeField> _recordFields(Iterable<RecordFieldElement> elements) {
   return fields.values;
 }
 
+Iterable<TypeField> _spreadRrecord(
+  RecordType record,
+  bool isNamed,
+  bool isMandatory,
+) =>
+    record.fields.map(
+      (field) => TypeField(
+        name: field.name,
+        type: field.type,
+        isMandatory: isMandatory,
+        isNamed: isNamed,
+      ),
+    );
+
 TypeField _recordField(
-  RecordConcreteFieldElement element,
+  RecordFieldElement element,
 ) =>
     TypeField(
       name: element.name,

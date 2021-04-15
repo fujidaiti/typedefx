@@ -93,45 +93,38 @@ class RecordElement extends TypedefxElement {
   }) : super(name: name, typeParameters: typeParameters);
 }
 
-abstract class RecordFieldElement extends ParameterElement {
+class RecordFieldElement extends ParameterElement {
   @override
   final RecordFieldTypeElement type;
-
-  RecordFieldElement({
-    required String name,
-    required this.type,
-  }) : super(name: name);
-}
-
-class RecordConcreteFieldElement extends RecordFieldElement {
-  @override
-  final RecordConcreteFieldTypeElement type;
 
   final bool isNamed;
   final bool isMandatory;
 
-  RecordConcreteFieldElement({
+  RecordFieldElement({
     required String name,
     required this.type,
     required this.isNamed,
     required this.isMandatory,
-  }) : super(name: name, type: type);
+  }) : super(name: name);
 }
 
-abstract class RecordFieldTypeElement = ParameterTypeElement with Type;
+class RecordFieldTypeElement = ParameterTypeElement with Type;
 
-class RecordConcreteFieldTypeElement = RecordFieldTypeElement with Type;
-
-abstract class RecordMetaFieldElement = RecordFieldElement with Type;
-
-class RecordSpreadFieldElement extends RecordMetaFieldElement {
+class RecordSpreadFieldElement extends RecordFieldElement {
   @override
   final RecordSpreadFieldTypeElement type;
 
   RecordSpreadFieldElement({
     required String name,
+    required bool isNamed,
+    required bool isMandatory,
     required this.type,
-  }) : super(name: name, type: type);
+  }) : super(
+          name: name,
+          type: type,
+          isNamed: isNamed,
+          isMandatory: isMandatory,
+        );
 }
 
 class RecordSpreadFieldTypeElement extends RecordFieldTypeElement {
@@ -151,12 +144,16 @@ class RecordSpreadFieldTypeElement extends RecordFieldTypeElement {
         );
 }
 
-class RecordOmitFieldElement extends RecordMetaFieldElement {
+class RecordOmitFieldElement extends RecordFieldElement {
   RecordOmitFieldElement({
     required String name,
+    required bool isNamed,
+    required bool isMandatory,
   }) : super(
           name: name,
           type: RecordOmitFieldTypeElement(),
+          isNamed: isNamed,
+          isMandatory: isMandatory,
         );
 }
 
