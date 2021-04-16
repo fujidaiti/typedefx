@@ -36,6 +36,7 @@ Iterable<TypeField> _recordFields(Iterable<RecordFieldElement> elements) {
         _record(element.type.element),
         element.isNamed,
         element.isMandatory,
+        element.type.isNullable,
       ).forEach((field) => fields[field.name] = field);
     } else if (element is RecordOmitFieldElement) {
       omittedFields.add(element.name);
@@ -50,15 +51,20 @@ Iterable<TypeField> _recordFields(Iterable<RecordFieldElement> elements) {
 
 Iterable<TypeField> _spreadRrecord(
   RecordType record,
-  bool isNamed,
-  bool isMandatory,
+  bool asNamed,
+  bool asMandatory,
+  bool forceAsNullable,
 ) =>
     record.fields.map(
       (field) => TypeField(
         name: field.name,
-        type: field.type,
-        isMandatory: isMandatory,
-        isNamed: isNamed,
+        type: ConcreteType(
+          name: field.type.name,
+          isNullable: forceAsNullable || field.type.isNullable,
+          uri: field.type.uri,
+        ),
+        isMandatory: asMandatory,
+        isNamed: asNamed,
       ),
     );
 
@@ -122,7 +128,8 @@ String? _dependencyUri(DependentElement dependency) {
   final uri = dependency.uri;
   if (uri == null) return null;
   if (_isCoreLibrary(uri)) return null;
-  if (dependency.doesRepresentTypedefxElement) return _generatedFileUri(uri);
+  if (dependency.doesRepresentTypedefxElement)
+    return _generatedFileUri(uri);
   return uri.toString();
 }
 

@@ -20,6 +20,8 @@ class TypeField {
     required this.isMandatory,
     required this.isNamed,
   });
+
+  bool get isUnnamedMandatory => !isNamed && isMandatory;
 }
 
 class TypeParameter {
@@ -42,4 +44,8 @@ class ConcreteType {
     required this.uri,
     required this.isNullable,
   });
+
+  String get nameWithNullabilitySuffix => isNullable ? '$name?' : name;
+
+  String get nullableName => '$name?';
 }

@@ -33,11 +33,8 @@ class CasesClassTemplate extends ClassTemplate {
 
   String get _namedCtors => model.cases.map(_namedCtor).join('\n\n');
 
-  String _caseField(Case caze) {
-    final type =
-        caze.type.isNullable ? caze.type.name : '${caze.type.name}?';
-    return 'final $type ${caze.name};';
-  }
+  String _caseField(Case caze) =>
+      'final ${caze.type.nullableName} ${caze.name};';
 
   String get _caseFields => model.cases.map(_caseField).join('\n\n');
 
@@ -125,7 +122,7 @@ class _MapMethodTemplate {
   _MapMethodTemplate(this._class);
 
   String _parameter(Case caze) =>
-      '\$R Function(${caze.type.name} value) ${caze.name}';
+      '\$R Function(${caze.type.nameWithNullabilitySuffix} value) ${caze.name}';
 
   String get _parameters => _class.model.cases.map(_parameter).join(', ');
 
@@ -158,7 +155,7 @@ class _MatchMethodTemplate {
   _MatchMethodTemplate(this._class);
 
   String _parameter(Case caze) =>
-      '\$R Function(${caze.type.name} value)? ${caze.name}';
+      '\$R Function(${caze.type.nameWithNullabilitySuffix} value)? ${caze.name}';
 
   String get _parameters => [
         '\$R Function(${_class.parameterizedClassName} value)? otherwise',

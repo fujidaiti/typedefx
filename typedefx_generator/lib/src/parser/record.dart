@@ -45,15 +45,24 @@ RecordSpreadFieldElement _parseRecordSpreadField(
       element: parameter,
     );
   }
+  if (_isUnnamedOptionalParameter(parameter) &&
+      !parameter.type.isNullable() &&
+      _containsAnyNonnullableField(record)) {
+    throw InvalidGenerationSourceError(
+      "Can't spread this @recored here, because it has non-nullable parameter(s)",
+      element: parameter,
+    );
+  }
   return RecordSpreadFieldElement(
     name: parameter.name,
     isMandatory: _isMandatoryParameter(parameter),
     isNamed: parameter.isNamed,
     type: RecordSpreadFieldTypeElement(
       element: record,
-      source: parameter.typeSource(),
+      source: parameter.typeSourceWithoutNullabilitySuffix(),
       uri: parameter.type.uri(),
-      doesRepresentTypedefxElement: parameter.type.doesRepresentTypedefxElement(),
+      doesRepresentTypedefxElement:
+          parameter.type.doesRepresentTypedefxElement(),
       isNullable: parameter.type.isNullable(),
     ),
   );
@@ -72,9 +81,10 @@ RecordFieldElement _parseRecorField(E.ParameterElement parameter) {
   return RecordFieldElement(
     name: parameter.name,
     type: RecordFieldTypeElement(
-      source: parameter.typeSource(),
+      source: parameter.typeSourceWithoutNullabilitySuffix(),
       uri: parameter.type.uri(),
-      doesRepresentTypedefxElement: parameter.type.doesRepresentTypedefxElement(),
+      doesRepresentTypedefxElement:
+          parameter.type.doesRepresentTypedefxElement(),
       isNullable: parameter.type.isNullable(),
     ),
     isNamed: parameter.isNamed,
@@ -85,10 +95,14 @@ RecordFieldElement _parseRecorField(E.ParameterElement parameter) {
 bool _isMandatoryParameter(E.ParameterElement parameter) =>
     parameter.isRequiredPositional ||
     parameter.isRequiredNamed ||
-    (parameter.isNamed && parameter.type.isNullable());
+    (parameter.isNamed && !parameter.type.isNullable());
 
 bool _isNonnullableUnnamedOptionalParameter(
         E.ParameterElement parameter) =>
-    !parameter.type.isNullable() &&
-    !parameter.isNamed &&
-    !_isMandatoryParameter(parameter);
+    !parameter.type.isNullable() && _isUnnamedOptionalParameter(parameter);
+
+bool _isUnnamedOptionalParameter(E.ParameterElement parameter) =>
+    !parameter.isNamed && !_isMandatoryParameter(parameter);
+
+bool _containsAnyNonnullableField(RecordElement record) =>
+    record.parameters.any((it) => !it.type.isNullable);

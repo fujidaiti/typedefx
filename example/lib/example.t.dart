@@ -16,7 +16,7 @@ class Data<T extends num> {
 
   final T value;
 
-  Data(this.id, this.datetime, this.value);
+  Data({required this.id, required this.datetime, required this.value});
 
   @override
   bool operator ==(dynamic other) {
@@ -41,8 +41,10 @@ class Data<T extends num> {
   @override
   String toString() => 'Data(id: $id, datetime: $datetime, value: $value)';
 
-  Data<T> copyWith({int? id, String? datetime, T? value}) =>
-      Data(id ?? this.id, datetime ?? this.datetime, value ?? this.value);
+  Data<T> copyWith({int? id, String? datetime, T? value}) => Data(
+      id: id ?? this.id,
+      datetime: datetime ?? this.datetime,
+      value: value ?? this.value);
 }
 
 class Error {
@@ -50,9 +52,11 @@ class Error {
 
   final String datetime;
 
-  final String message;
+  final String? message;
 
-  Error(this.id, this.datetime, this.message);
+  final int? code;
+
+  Error(this.id, {required this.datetime, this.message, required this.code});
 
   @override
   bool operator ==(dynamic other) {
@@ -64,7 +68,10 @@ class Error {
                 const DeepCollectionEquality()
                     .equals(other.datetime, datetime)) &&
             (identical(other.message, message) ||
-                const DeepCollectionEquality().equals(other.message, message)));
+                const DeepCollectionEquality()
+                    .equals(other.message, message)) &&
+            (identical(other.code, code) ||
+                const DeepCollectionEquality().equals(other.code, code)));
   }
 
   @override
@@ -72,13 +79,18 @@ class Error {
       runtimeType.hashCode ^
       const DeepCollectionEquality().hash(id) ^
       const DeepCollectionEquality().hash(datetime) ^
-      const DeepCollectionEquality().hash(message);
+      const DeepCollectionEquality().hash(message) ^
+      const DeepCollectionEquality().hash(code);
 
   @override
-  String toString() => 'Error(id: $id, datetime: $datetime, message: $message)';
+  String toString() =>
+      'Error(id: $id, datetime: $datetime, message: $message, code: $code)';
 
-  Error copyWith({int? id, String? datetime, String? message}) =>
-      Error(id ?? this.id, datetime ?? this.datetime, message ?? this.message);
+  Error copyWith({int? id, String? datetime, String? message, int? code}) =>
+      Error(id ?? this.id,
+          datetime: datetime ?? this.datetime,
+          message: message ?? this.message,
+          code: code ?? this.code);
 }
 
 class Task {
@@ -118,11 +130,11 @@ class Task {
 }
 
 class TaskSummary {
-  final String id;
+  final String? id;
 
-  final String datetime;
+  final String? datetime;
 
-  TaskSummary(this.id, this.datetime);
+  TaskSummary([this.id, this.datetime]);
 
   @override
   bool operator ==(dynamic other) {
@@ -153,7 +165,7 @@ enum _$ResultCase { data, error }
 class Result<T extends num> {
   Result._(this._$case, this.data, this.error);
 
-  Result.data(Data<T>? data) : this._(_$ResultCase.data, data, null);
+  Result.data(Data<T> data) : this._(_$ResultCase.data, data, null);
 
   Result.error(Error error) : this._(_$ResultCase.error, null, error);
 

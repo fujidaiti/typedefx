@@ -31,6 +31,7 @@ extension DartTypeUtils on DartType {
   }
 
   bool isNullable() =>
+      this.isDynamic ||
       this.nullabilitySuffix == NullabilitySuffix.question;
 }
 
@@ -47,5 +48,11 @@ extension ParameterElementUtils on E.ParameterElement {
       },
     );
     return source ?? this.type.toString();
+  }
+
+  String typeSourceWithoutNullabilitySuffix() {
+    final source = typeSource();
+    if (!this.type.isNullable()) return source;
+    return source.substring(0, source.length - 1);
   }
 }

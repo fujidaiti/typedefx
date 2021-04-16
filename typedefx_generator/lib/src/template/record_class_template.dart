@@ -27,14 +27,12 @@ class RecordClassTemplate extends ClassTemplate {
   _CopyWithMethodTemplate get copyWithMethod =>
       _CopyWithMethodTemplate(this);
 
-  String get _constructor {
-    final params = model.fields.map((it) => 'this.${it.name}');
-    return '$className(${params.join(', ')});';
-  }
+  _ConstructorTemplate get _constructor => _ConstructorTemplate(this);
 
   String get _fields {
     return model.fields
-        .map((it) => 'final ${it.type.name} ${it.name};')
+        .map((it) =>
+            'final ${it.type.nameWithNullabilitySuffix} ${it.name};')
         .join('\n\n');
   }
 
@@ -58,6 +56,39 @@ class $canonicalClassName {
   }
 }
 
+class _ConstructorTemplate {
+  final RecordClassTemplate _class;
+
+  _ConstructorTemplate(this._class);
+
+  String _parameter(TypeField field) => field.isNamed && field.isMandatory
+      ? 'required this.${field.name}'
+      : 'this.${field.name}';
+
+  String get _unnamedMandatoryParams => _class.model.fields
+      .where((it) => it.isUnnamedMandatory)
+      .map(_parameter)
+      .join(', ');
+
+  String get _surroundedParams {
+    final params =
+        _class.model.fields.where((it) => !it.isUnnamedMandatory);
+    final named = params.any((it) => it.isNamed);
+    final src = params.map(_parameter).join(', ');
+    if (src.isEmpty) return '';
+    return named ? '{$src}' : '[$src]';
+  }
+
+  @override
+  String toString() {
+    final params = [
+      _unnamedMandatoryParams,
+      _surroundedParams,
+    ].where((it) => it.isNotEmpty).join(', ');
+    return '${_class.className}($params);';
+  }
+}
+
 class _CopyWithMethodTemplate {
   final RecordClassTemplate _class;
 
@@ -65,14 +96,17 @@ class _CopyWithMethodTemplate {
 
   String get _returnType => _class.parameterizedClassName;
 
-  String _parameter(TypeField field) => field.type.isNullable
-      ? '${field.type.name} ${field.name}'
-      : '${field.type.name}? ${field.name}';
+  String _parameter(TypeField field) =>
+      '${field.type.nullableName} ${field.name}';
 
-  String get _parameters => _class.model.fields.map(_parameter).join(', ');
+  String get _parameters => [
+        ..._class.model.fields.where((it) => it.isUnnamedMandatory),
+        ..._class.model.fields.where((it) => !it.isUnnamedMandatory),
+      ].map(_parameter).join(', ');
 
-  String _ctorArgument(TypeField field) =>
-      '${field.name} ?? this.${field.name}';
+  String _ctorArgument(TypeField field) => field.isNamed
+      ? '${field.name}: ${field.name} ?? this.${field.name}'
+      : '${field.name} ?? this.${field.name}';
 
   String get _ctorArguments =>
       _class.model.fields.map(_ctorArgument).join(', ');

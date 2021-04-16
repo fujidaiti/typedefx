@@ -19,7 +19,7 @@ CaseElement _parseCase(E.ParameterElement parameter) {
 }
 
 CaseTypeElement _parseCaseType(E.ParameterElement parameter) {
-  final source = parameter.typeSource();
+  final source = parameter.typeSourceWithoutNullabilitySuffix();
   final uri = parameter.type.uri();
   final isTypedefxElement = parameter.type.doesRepresentTypedefxElement();
   final typedefxElement = tryParseDependentType(parameter.type);
