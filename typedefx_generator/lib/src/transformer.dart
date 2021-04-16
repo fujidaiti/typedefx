@@ -1,10 +1,14 @@
 import 'package:typedefx_generator/src/config.dart';
-import 'package:typedefx_generator/src/models.dart';
 import 'package:typedefx_generator/src/utils.dart';
 import 'package:typedefx_generator/src/element/target_library.dart';
 import 'package:typedefx_generator/src/element/record.dart';
 import 'package:typedefx_generator/src/element/cases.dart';
 import 'package:typedefx_generator/src/element/common.dart';
+import 'package:typedefx_generator/src/model/common.dart';
+import 'package:typedefx_generator/src/model/generated_library.dart';
+import 'package:typedefx_generator/src/model/record.dart';
+import 'package:typedefx_generator/src/model/cases.dart';
+import 'package:typedefx_generator/src/model/composite.dart';
 
 GeneratedLibrary transform(TargetLibraryElement library) =>
     GeneratedLibrary(

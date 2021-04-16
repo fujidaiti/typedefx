@@ -1,5 +1,5 @@
 import 'package:code_builder/code_builder.dart';
-import 'package:typedefx_generator/src/models.dart';
+import 'package:typedefx_generator/src/model/generated_library.dart';
 import 'package:typedefx_generator/src/template/record_class_template.dart'
     as recordClass;
 import 'package:typedefx_generator/src/template/cases_class_template.dart'

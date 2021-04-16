@@ -1,5 +1,5 @@
 import 'package:code_builder/code_builder.dart';
-import 'package:typedefx_generator/src/models.dart';
+import 'package:typedefx_generator/src/model/cases.dart';
 import 'package:typedefx_generator/src/template/equals_method_template.dart'
     as equalsMethod;
 import 'package:typedefx_generator/src/template/hash_code_method_template.dart'

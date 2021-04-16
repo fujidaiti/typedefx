@@ -1,5 +1,6 @@
 import 'package:code_builder/code_builder.dart';
-import 'package:typedefx_generator/src/models.dart';
+import 'package:typedefx_generator/src/model/record.dart';
+import 'package:typedefx_generator/src/model/common.dart';
 
 Method inflate(RecordType type) {
   final method = MethodBuilder()
