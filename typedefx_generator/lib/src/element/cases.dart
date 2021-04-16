@@ -35,7 +35,7 @@ abstract class TypedefxCaseTypeElement<T extends TypedefxElement>
   }) : super(
           source: source,
           uri: uri,
-          isTypedefxElement: isTypedefxElement,
+          doesRepresentTypedefxElement: isTypedefxElement,
           isNullable: isNullable,
         );
 }

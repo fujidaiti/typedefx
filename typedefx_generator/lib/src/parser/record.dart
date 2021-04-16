@@ -53,7 +53,7 @@ RecordSpreadFieldElement _parseRecordSpreadField(
       element: record,
       source: parameter.typeSource(),
       uri: parameter.type.uri(),
-      isTypedefxElement: parameter.type.doesRepresentTypedefxElement(),
+      doesRepresentTypedefxElement: parameter.type.doesRepresentTypedefxElement(),
       isNullable: parameter.type.isNullable(),
     ),
   );
@@ -74,7 +74,7 @@ RecordFieldElement _parseRecorField(E.ParameterElement parameter) {
     type: RecordFieldTypeElement(
       source: parameter.typeSource(),
       uri: parameter.type.uri(),
-      isTypedefxElement: parameter.type.doesRepresentTypedefxElement(),
+      doesRepresentTypedefxElement: parameter.type.doesRepresentTypedefxElement(),
       isNullable: parameter.type.isNullable(),
     ),
     isNamed: parameter.isNamed,

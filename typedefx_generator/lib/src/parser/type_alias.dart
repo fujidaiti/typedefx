@@ -12,7 +12,7 @@ Iterable<TypeParameterElement> typeParameters(
         bound: param.bound?.let(
           (bound) => DependentElement(
             source: bound.toString(),
-            isTypedefxElement: bound.doesRepresentTypedefxElement(),
+            doesRepresentTypedefxElement: bound.doesRepresentTypedefxElement(),
             uri: bound.uri(),
             isNullable: bound.isNullable(),
           ),

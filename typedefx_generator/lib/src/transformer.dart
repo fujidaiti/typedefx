@@ -122,7 +122,7 @@ String? _dependencyUri(DependentElement dependency) {
   final uri = dependency.uri;
   if (uri == null) return null;
   if (_isCoreLibrary(uri)) return null;
-  if (dependency.isTypedefxElement) return _generatedFileUri(uri);
+  if (dependency.doesRepresentTypedefxElement) return _generatedFileUri(uri);
   return uri.toString();
 }
 

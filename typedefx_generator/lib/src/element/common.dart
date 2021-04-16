@@ -1,13 +1,13 @@
 class DependentElement {
   final String source;
   final Uri? uri;
-  final bool isTypedefxElement;
+  final bool doesRepresentTypedefxElement;
   final bool isNullable;
 
   DependentElement({
     required this.source,
     required this.uri,
-    required this.isTypedefxElement,
+    required this.doesRepresentTypedefxElement,
     required this.isNullable,
   });
 }

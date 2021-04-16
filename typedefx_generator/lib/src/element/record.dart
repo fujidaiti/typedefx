@@ -48,13 +48,13 @@ class RecordSpreadFieldTypeElement extends RecordFieldTypeElement {
   RecordSpreadFieldTypeElement({
     required String source,
     required Uri? uri,
-    required bool isTypedefxElement,
+    required bool doesRepresentTypedefxElement,
     required bool isNullable,
     required this.element,
   }) : super(
           source: source,
           uri: uri,
-          isTypedefxElement: isTypedefxElement,
+          doesRepresentTypedefxElement: doesRepresentTypedefxElement,
           isNullable: isNullable,
         );
 }
@@ -78,7 +78,7 @@ class RecordOmitFieldTypeElement extends RecordFieldTypeElement {
       : super(
           source: 'dynamic',
           uri: null,
-          isTypedefxElement: false,
+          doesRepresentTypedefxElement: false,
           isNullable: false,
         );
 }

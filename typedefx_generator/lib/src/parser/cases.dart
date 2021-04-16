@@ -43,7 +43,7 @@ CaseTypeElement _parseCaseType(E.ParameterElement parameter) {
   else
     return CaseTypeElement(
       source: source,
-      isTypedefxElement: isTypedefxElement,
+      doesRepresentTypedefxElement: isTypedefxElement,
       uri: uri,
       isNullable: isNullable,
     );
