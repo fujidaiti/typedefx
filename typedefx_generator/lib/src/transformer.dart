@@ -1,7 +1,10 @@
 import 'package:typedefx_generator/src/config.dart';
 import 'package:typedefx_generator/src/models.dart';
 import 'package:typedefx_generator/src/utils.dart';
-import 'package:typedefx_generator/src/valid_elements.dart';
+import 'package:typedefx_generator/src/element/target_library.dart';
+import 'package:typedefx_generator/src/element/record.dart';
+import 'package:typedefx_generator/src/element/cases.dart';
+import 'package:typedefx_generator/src/element/common.dart';
 
 GeneratedLibrary transform(TargetLibraryElement library) =>
     GeneratedLibrary(
@@ -98,7 +101,7 @@ Iterable<TypeParameter> _typeParameters(
         name: it.name,
         bound: it.bound?.let(
           (bound) => ConcreteType(
-            name: bound.name,
+            name: bound.source,
             uri: _dependencyUri(bound),
             isNullable: bound.isNullable,
           ),

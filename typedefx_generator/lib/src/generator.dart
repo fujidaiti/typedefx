@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:build/build.dart';
-import 'package:typedefx_generator/src/parser.dart';
+import 'package:typedefx_generator/src/parser/target_library.dart';
 import 'package:typedefx_generator/src/template/library_template.dart';
 import 'package:typedefx_generator/src/transformer.dart';
 import 'package:typedefx_generator/src/writer.dart';
