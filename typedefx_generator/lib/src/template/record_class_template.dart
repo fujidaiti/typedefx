@@ -1,85 +1,90 @@
-import 'package:code_builder/code_builder.dart';
 import 'package:typedefx_generator/src/model/record.dart';
 import 'package:typedefx_generator/src/model/common.dart';
-import 'package:typedefx_generator/src/template/equals_method_template.dart'
-    as equalsMethod;
-import 'package:typedefx_generator/src/template/hash_code_method_template.dart'
-    as hashCodeMethod;
-import 'package:typedefx_generator/src/template/to_string_method_template.dart'
-    as toStringMethod;
-import 'package:typedefx_generator/src/template/copy_with_method_template.dart'
-    as copyWithMethod;
+import 'package:typedefx_generator/src/template/class_template.dart';
+import 'package:typedefx_generator/src/template/equals_method_template.dart';
+import 'package:typedefx_generator/src/template/hash_code_method_template.dart';
+import 'package:typedefx_generator/src/template/to_string_method_template.dart';
 
-Class inflate(RecordType type) {
-  final klass = ClassBuilder()
-    ..name = type.name
-    ..types.addAll(_typeParameters(type))
-    ..constructors.add(_constructor(type))
-    ..fields.addAll(_fields(type))
-    ..methods.addAll(_methods(type));
-  return klass.build();
+class RecordClassTemplate extends ClassTemplate {
+  @override
+  final RecordType model;
+
+  RecordClassTemplate(this.model);
+
+  HashCodeMethodTemplate get hashCodeMethod =>
+      HashCodeMethodTemplate(fields: model.fields.map((it) => it.name));
+
+  EqualsMethodTemplate get equalsMethod => EqualsMethodTemplate(
+        className: parameterizedClassName,
+        fields: model.fields.map((it) => it.name),
+      );
+
+  ToStringMethodTemplate get toStringMethod => ToStringMethodTemplate(
+        label: className,
+        fields: model.fields.map((it) => it.name),
+      );
+
+  _CopyWithMethodTemplate get copyWithMethod =>
+      _CopyWithMethodTemplate(this);
+
+  String get _constructor {
+    final params = model.fields.map((it) => 'this.${it.name}');
+    return '$className(${params.join(', ')});';
+  }
+
+  String get _fields {
+    return model.fields
+        .map((it) => 'final ${it.type.name} ${it.name};')
+        .join('\n\n');
+  }
+
+  @override
+  String toString() {
+    return '''
+class $canonicalClassName {
+  $_fields
+
+  $_constructor
+
+  $equalsMethod
+
+  $hashCodeMethod
+
+  $toStringMethod
+
+  $copyWithMethod
+}
+    ''';
+  }
 }
 
-Iterable<Reference> _typeParameters(RecordType type) =>
-    type.typeParameters.map((it) {
-      final name = it.name;
-      final bound = it.bound?.name;
-      return bound != null ? '$name extends $bound' : name;
-    }).map((it) => refer(it));
+class _CopyWithMethodTemplate {
+  final RecordClassTemplate _class;
 
-Constructor _constructor(RecordType type) {
-  final ctor = ConstructorBuilder()
-    ..requiredParameters.addAll(
-      type.fields.where((it) => !it.isNamed).map(_constructorParameter),
-    )
-    ..optionalParameters.addAll(
-      type.fields.where((it) => it.isNamed).map(_constructorParameter),
-    );
-  return ctor.build();
-}
+  _CopyWithMethodTemplate(this._class);
 
-Parameter _constructorParameter(TypeField field) {
-  final parameter = ParameterBuilder()
-    ..name = field.name
-    ..toThis = true
-    ..named = _shouldBeNamedParameter(field)
-    ..required = _shouldBeMarkedAsRequired(field);
-  return parameter.build();
-}
+  String get _returnType => _class.parameterizedClassName;
 
-bool _shouldBeNamedParameter(TypeField field) => field.isNamed;
+  String _parameter(TypeField field) => field.type.isNullable
+      ? '${field.type.name} ${field.name}'
+      : '${field.type.name}? ${field.name}';
 
-bool _shouldBeMarkedAsRequired(TypeField field) =>
-    _shouldBeNamedParameter(field) && field.isMandatory;
+  String get _parameters => _class.model.fields.map(_parameter).join(', ');
 
-Field _field(TypeField field) {
-  final field_ = FieldBuilder()
-    ..name = field.name
-    ..type = refer(field.type.name)
-    ..modifier = FieldModifier.final$;
-  return field_.build();
-}
+  String _ctorArgument(TypeField field) =>
+      '${field.name} ?? this.${field.name}';
 
-Iterable<Field> _fields(RecordType type) => type.fields.map(_field);
+  String get _ctorArguments =>
+      _class.model.fields.map(_ctorArgument).join(', ');
 
-Iterable<Method> _methods(RecordType type) => [
-      hashCodeMethod.inflate(
-        fieldNames: type.fields.map((it) => it.name),
-      ),
-      equalsMethod.inflate(
-        className: _parameterizedSelfType(type),
-        fieldNames: type.fields.map((it) => it.name),
-      ),
-      toStringMethod.inflate(
-        className: type.name,
-        fieldNames: type.fields.map((it) => it.name),
-      ),
-      copyWithMethod.inflate(type),
-    ];
+  String get _ctor => _class.className;
 
-String _parameterizedSelfType(RecordType type) {
-  final params = type.typeParameters.map((it) => it.name);
-  return params.isEmpty
-      ? '${type.name}'
-      : '${type.name}<${params.join(', ')}>';
+  String get _ctorCall => '$_ctor($_ctorArguments)';
+
+  @override
+  String toString() {
+    return '''
+  $_returnType copyWith({$_parameters}) => $_ctorCall;
+    ''';
+  }
 }

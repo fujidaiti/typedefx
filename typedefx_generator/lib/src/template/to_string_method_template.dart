@@ -1,19 +1,20 @@
-import 'package:code_builder/code_builder.dart';
+class ToStringMethodTemplate {
+  final String label;
+  final Iterable<String> fields;
 
-Method inflate({
-  required String className,
-  required Iterable<String> fieldNames,
-}) {
-  final method = MethodBuilder()
-    ..name = 'toString'
-    ..returns = refer('String')
-    ..annotations.add(refer('override'))
-    ..lambda = true
-    ..body = _bodyCode(className, fieldNames);
-  return method.build();
-}
+  ToStringMethodTemplate({
+    required this.label,
+    required this.fields,
+  });
 
-Code _bodyCode(String className, Iterable<String> fieldNames) {
-  final values = fieldNames.map((it) => '$it: \$$it').join(', ');
-  return Code("'$className($values)'");
+  String get displayString =>
+      '$label(${fields.map((it) => '${it}: \$${it}').join(', ')})';
+
+  @override
+  String toString() {
+    return '''
+    @override
+    String toString() => '$displayString';
+    ''';
+  }
 }

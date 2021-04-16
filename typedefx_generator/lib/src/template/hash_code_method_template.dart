@@ -1,20 +1,21 @@
-import 'package:code_builder/code_builder.dart';
+class HashCodeMethodTemplate {
+  final Iterable<String> fields;
 
-Method inflate({required Iterable<String> fieldNames}) {
-  final method = MethodBuilder()
-    ..name = 'hashCode'
-    ..returns = refer('int')
-    ..lambda = true
-    ..type = MethodType.getter
-    ..annotations.add(refer('override'))
-    ..body = _bodyCode(fieldNames);
-  return method.build();
+  HashCodeMethodTemplate({required this.fields});
+
+  Iterable<String> get _deepCollectionEqualities =>
+      fields.map((it) => 'const DeepCollectionEquality().hash($it)');
+
+  String get _body => [
+        'runtimeType.hashCode',
+        ..._deepCollectionEqualities,
+      ].join(' ^ ');
+
+  @override
+  String toString() {
+    return '''
+  @override
+  int get hashCode => $_body;
+    ''';
+  }
 }
-
-Code _bodyCode(Iterable<String> fieldNames) => Code([
-      'runtimeType.hashCode',
-      ...fieldNames.map(
-        (it) => 'const DeepCollectionEquality().hash($it)',
-      ),
-      'super.hashCode',
-    ].join('^'));

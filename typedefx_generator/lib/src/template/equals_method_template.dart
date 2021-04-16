@@ -2,6 +2,38 @@
 
 import 'package:code_builder/code_builder.dart';
 
+class EqualsMethodTemplate {
+  final String className;
+  final Iterable<String> fields;
+
+  EqualsMethodTemplate({
+    required this.className,
+    required this.fields,
+  });
+
+  String _identical(String field) => 'identical(other.$field, $field)';
+
+  String _deepCollectionEquality(String field) =>
+      'const DeepCollectionEquality().equals(other.$field, $field)';
+
+  String _fieldEquality(String field) =>
+      '(${_identical(field)} || ${_deepCollectionEquality(field)})';
+
+  String get _fieldEqualities =>
+      fields.map(_fieldEquality).join(' && \n');
+
+  @override
+  String toString() {
+    return '''
+  @override
+  bool operator ==(dynamic other) {
+    return identical(this, other) ||
+        (other is $className && $_fieldEqualities);
+  }
+    ''';
+  }
+}
+
 Method inflate({
   required String className,
   required Iterable<String> fieldNames,

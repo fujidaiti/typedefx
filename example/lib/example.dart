@@ -3,16 +3,16 @@ library example;
 import 'package:typedefx/typedefx_export.dart';
 
 @record
-typedef Data<T>(int id, String datetime, T value);
+typedef Data<T extends num>(int id, String datetime, T value);
 
 @record
 typedef Error(int id, String datetime, String message);
 
 @cases
-typedef Result<T>(Data<T>? data, Error error);
+typedef Result<T extends num>(Data<T>? data, Error error);
 
 @cases
-typedef Either<T>(Result<T> result, int none);
+typedef Either<T extends num>(Result<T> result, int none);
 
 @record
 typedef Task(
