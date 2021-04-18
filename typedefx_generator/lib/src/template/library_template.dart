@@ -14,7 +14,6 @@ class LibraryTemplate {
         ],
         for (final type in library.cases) ...[
           ...type.cases.map((it) => it.type.uri),
-          ...type.commonFields.map((it) => it.type.uri),
           ...type.typeParameters.map((it) => it.bound?.uri),
         ]
       ].whereType<String>().where((uri) => uri != library.uri);

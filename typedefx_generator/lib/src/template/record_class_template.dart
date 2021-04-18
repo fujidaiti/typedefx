@@ -1,6 +1,7 @@
 import 'package:typedefx_generator/src/model/record.dart';
 import 'package:typedefx_generator/src/model/common.dart';
 import 'package:typedefx_generator/src/template/class_template.dart';
+import 'package:typedefx_generator/src/template/parameters_template.dart';
 import 'package:typedefx_generator/src/template/equals_method_template.dart';
 import 'package:typedefx_generator/src/template/hash_code_method_template.dart';
 import 'package:typedefx_generator/src/template/to_string_method_template.dart';
@@ -39,7 +40,7 @@ class RecordClassTemplate extends ClassTemplate {
   @override
   String toString() {
     return '''
-class $canonicalClassName {
+class $classFullName {
   $_fields
 
   $_constructor
@@ -65,27 +66,20 @@ class _ConstructorTemplate {
       ? 'required this.${field.name}'
       : 'this.${field.name}';
 
-  String get _unnamedMandatoryParams => _class.model.fields
-      .where((it) => it.isUnnamedMandatory)
-      .map(_parameter)
-      .join(', ');
-
-  String get _surroundedParams {
-    final params =
-        _class.model.fields.where((it) => !it.isUnnamedMandatory);
-    final named = params.any((it) => it.isNamed);
-    final src = params.map(_parameter).join(', ');
-    if (src.isEmpty) return '';
-    return named ? '{$src}' : '[$src]';
-  }
+  ParametersTemplate get _parameters => ParametersTemplate(
+        unnamedMandatoryParams: _class.model.fields
+            .where((it) => it.isUnnamedMandatory)
+            .map(_parameter),
+        enclosedParams: _class.model.fields
+            .where((it) => !it.isUnnamedMandatory)
+            .map(_parameter),
+        enclosedParamsAreNamed:
+            _class.model.fields.any((it) => it.isNamed),
+      );
 
   @override
   String toString() {
-    final params = [
-      _unnamedMandatoryParams,
-      _surroundedParams,
-    ].where((it) => it.isNotEmpty).join(', ');
-    return '${_class.className}($params);';
+    return '${_class.className}($_parameters);';
   }
 }
 

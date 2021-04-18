@@ -1,4 +1,6 @@
 import 'package:typedefx_generator/src/model/cases.dart';
+import 'package:typedefx_generator/src/model/common.dart';
+import 'package:typedefx_generator/src/template/parameters_template.dart';
 import 'package:typedefx_generator/src/utils.dart';
 import 'package:typedefx_generator/src/template/class_template.dart';
 import 'package:typedefx_generator/src/template/equals_method_template.dart';
@@ -69,12 +71,24 @@ class CasesClassTemplate extends ClassTemplate {
 
   _MatchMethodTemplate get _matchMethod => _MatchMethodTemplate(this);
 
+  _FactoryClassTemplate get _factoryClass => _FactoryClassTemplate(this);
+
+  String get _staticFactory =>
+      'static final of = ${_factoryClass.name}();';
+
+  bool _shouldGenerateFactoryClass() =>
+      model.cases.any((it) => it is RecordCase);
+
   @override
   String toString() {
     return '''
     $caseEnum
-    
-    class $canonicalClassName {
+
+    ${_shouldGenerateFactoryClass() ? _factoryClass : ''}
+
+    class $classFullName {
+      ${_shouldGenerateFactoryClass() ? _staticFactory : ''}
+      
       $_privateCtor
       
       $_namedCtors
@@ -183,6 +197,107 @@ class _MatchMethodTemplate {
       }
       return otherwise?.call(this);
     }
+    ''';
+  }
+}
+
+/*
+
+class _$ResultFactory {
+  const _$ResultFactory();
+
+  Result<T> data<T extends num>(
+    int id,
+    String datetime,
+    T value,
+  ) =>
+      Result.data(
+        Data(
+          id: id,
+          datetime: datetime,
+          value: value,
+        ),
+      );
+}
+
+*/
+
+class _FactoryClassTemplate {
+  final CasesClassTemplate klass;
+
+  _FactoryClassTemplate(this.klass);
+
+  String get name => '_\$${klass.model.name}Factory';
+
+  String _methodParameter(TypeField field) {
+    if (field.isNamed && field.isMandatory)
+      return 'required ${field.type.nameWithNullabilitySuffix} ${field.name}';
+    return '${field.type.nameWithNullabilitySuffix} ${field.name}';
+  }
+
+  String get factoryMethods => [
+        ...klass.model.cases.whereType<RecordCase>().map(
+              (it) => _FactoryMethodTemplate(
+                klass: klass,
+                methodName: it.name,
+                ctorName: it.typeSpec.name,
+                parameters: ParametersTemplate(
+                  unnamedMandatoryParams: it.typeSpec.fields
+                      .where((field) => field.isUnnamedMandatory)
+                      .map(_methodParameter),
+                  enclosedParams: it.typeSpec.fields
+                      .where((field) => field.isNamed)
+                      .map(_methodParameter),
+                  enclosedParamsAreNamed:
+                      it.typeSpec.fields.any((field) => field.isNamed),
+                ),
+                arguments: [
+                  ...it.typeSpec.fields
+                      .where((field) => !field.isNamed)
+                      .map((it) => it.name),
+                  ...it.typeSpec.fields
+                      .where((field) => field.isNamed)
+                      .map((it) => '${it.name}: ${it.name}'),
+                ].join(', '),
+              ),
+            ),
+      ].join('\n\n');
+
+  @override
+  String toString() {
+    return '''
+    class $name {
+      const $name();
+
+      $factoryMethods
+    }
+    ''';
+  }
+}
+
+class _FactoryMethodTemplate {
+  final CasesClassTemplate klass;
+  final ParametersTemplate parameters;
+  final String arguments;
+  final String methodName;
+  final String ctorName;
+
+  _FactoryMethodTemplate({
+    required this.klass,
+    required this.parameters,
+    required this.arguments,
+    required this.methodName,
+    required this.ctorName,
+  });
+
+  @override
+  String toString() {
+    String returns = klass.parameterizedClassName;
+    final name = '$methodName${klass.typeParameters}';
+    final ctorCall = '$ctorName($arguments)';
+    return '''
+    $returns $name($parameters) => 
+      ${klass.className}.$methodName($ctorCall);
     ''';
   }
 }

@@ -18,4 +18,7 @@ class GeneratedLibrary {
     required this.originalUri,
     required this.exportOriginalUri,
   });
+
+  bool get isEmpty =>
+      records.isEmpty && cases.isEmpty && composites.isEmpty;
 }

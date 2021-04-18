@@ -13,14 +13,13 @@ abstract class ClassTemplate {
         : '$className<${params.join(', ')}>';
   }
 
-  String get canonicalClassName {
-    final params = model.typeParameters.map(
-      (type) =>
-          type.bound?.let((it) => '${type.name} extends ${it.name}') ??
-          type.name,
-    );
-    return params.isEmpty
-        ? '$className'
-        : '$className<${params.join(', ')}>';
-  }
+  String get classFullName => '$className$typeParameters';
+
+  String get typeParameters => model.typeParameters
+      .map(
+        (type) =>
+            type.bound?.let((it) => '${type.name} extends ${it.name}') ??
+            type.name,
+      )
+      .let((it) => it.isNotEmpty ? '<${it.join(', ')}>' : '');
 }

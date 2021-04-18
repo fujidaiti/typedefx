@@ -162,7 +162,21 @@ class TaskSummary {
 
 enum _$ResultCase { data, error }
 
+class _$ResultFactory {
+  const _$ResultFactory();
+
+  Result<T> data<T extends num>(
+          {required int id, required String datetime, required T value}) =>
+      Result.data(Data(id: id, datetime: datetime, value: value));
+
+  Result<T> error<T extends num>(int id,
+          {required String datetime, String? message, required int? code}) =>
+      Result.error(Error(id, datetime: datetime, message: message, code: code));
+}
+
 class Result<T extends num> {
+  static final of = _$ResultFactory();
+
   Result._(this._$case, this.data, this.error);
 
   Result.data(Data<T> data) : this._(_$ResultCase.data, data, null);

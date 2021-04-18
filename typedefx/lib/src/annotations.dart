@@ -1,5 +1,6 @@
 class Typedefx {
-  const Typedefx._();
+  final bool minimal;
+  const Typedefx._({this.minimal = false});
 }
 
 class Record extends Typedefx {

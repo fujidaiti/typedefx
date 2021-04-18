@@ -1,4 +1,3 @@
-
 import 'package:typedefx_generator/src/model/common.dart';
 
 class RecordType extends TypedefxType {
